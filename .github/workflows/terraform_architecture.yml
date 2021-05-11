@@ -42,7 +42,6 @@ jobs:
           env:
             TF_VAR_BASTION_PRIVATE_KEY: ${{ secrets.BASTION_PRIVATE_KEY }}
           run:
-           echo "${BASTION_PRIVATE_KEY}"
            go test -v -count=1 -timeout 60m awsbuild_test.go
           working-directory: ./test
  
