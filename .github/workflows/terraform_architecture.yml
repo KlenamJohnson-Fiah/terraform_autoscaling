@@ -1,0 +1,96 @@
+name: terraform-architecture-actions
+on: [push]
+jobs:
+  static_analysis-tool-tfsec:
+    runs-on: ubuntu-16.04 
+    steps:
+      - uses: actions/checkout@v2
+      - name: download go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.13.1' 
+      -  run: go get -u github.com/tfsec/tfsec/cmd/tfsec
+         shell: bash
+      - run: tfsec .
+        working-directory: ./manifest
+
+  infrastructure-test-terratest_awsbuild_test:
+      runs-on: ubuntu-16.04
+      env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      steps:
+        - uses: actions/checkout@v2
+        - name: download go
+          uses: actions/setup-go@v2
+          with:
+            go-version: '1.13.1'  
+          id: go
+
+        - name: Dependencies setup 
+          run: go get -v -t -d  && go mod tidy
+          working-directory: ./test
+
+        - name: Hashicorp setup
+          uses: hashicorp/setup-terraform@v1
+          with: 
+            terraform_version: 0.14.0
+            terraform_wrapper: false #to stop  terraform wrapper from manipulating the stdout and stderr which makes it difficult pipeline to    
+                                    #read results of output. Test will pass but still receive exit code of 1
+           
+        - name: Test awsbuild_test
+          env:
+            TF_VAR_BASTION_PRIVATE_KEY: ${{ secrets.BASTION_PRIVATE_KEY }}
+          run:
+           echo "${BASTION_PRIVATE_KEY}"
+           go test -v -count=1 -timeout 60m awsbuild_test.go
+          working-directory: ./test
+ 
+  # infrastructure-test-terratest_awsssh_test:
+  #     runs-on: ubuntu-16.04
+  #     env:
+  #           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     steps:
+  #       - uses: actions/checkout@v2
+  #       - name: download go
+  #         uses: actions/setup-go@v2
+  #         with:
+  #           go-version: '1.13.1'  
+  #         id: go
+          
+        # - name: get dependecies
+        #   run: |
+        #     if [ -f Gopkg.toml ]; then
+        #       curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+        #       dep ensure
+        #     else
+        #       go get -v -d -t ./...  
+        #     fi
+
+        # - name: Dependencies setup 
+        #   run: go get -v -t -d && go mod tidy
+        #   working-directory: ./test
+
+        # - name: Hashicorp setup
+        #   uses: hashicorp/setup-terraform@v1
+        #   with: 
+        #     terraform_version: 0.14.0
+        #     terraform_wrapper: false #to stop  terraform wrapper from manipulating the stdout and stderr which makes it difficult pipeline to    
+        #                             #results of output. Test will pass but still receive exit code of 1
+        # - name: Test awssh_test
+        #   env: 
+        #     TF_VAR_BASTION_PRIVATE_KEY: ${{ secrets.BASTION_PRIVATE_KEY }}
+        #     BASTION_PRIVATE_KEY: ${{ secrets.BASTION_PRIVATE_KEY }}
+        #   run:
+        #     go test -v -count=1 -timeout 60m awsssh_test.go
+        #   working-directory:  ./test
+
+
+
+          
+        
+
+
+      
+  

@@ -1,0 +1,4 @@
+.vscode
+.terraform
+manifest/*.tfplan
+manifest/terraform.tfstate.tf/dev
